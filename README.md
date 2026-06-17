@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sprint Poker
 
-## Getting Started
+Real-time planning poker for agile teams. Create a room, share a short code, and estimate stories together — no login required.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Framework:** Next.js 16 (App Router), React 19, TypeScript
+- **Styling:** Tailwind CSS v4, RupeeLens-inspired theme tokens
+- **UI:** shadcn/ui-style components (Button, Input, Card, Badge, Avatar)
+- **Animation:** framer-motion
+- **Icons:** lucide-react
+- **Theme:** next-themes (system / light / dark)
+- **Backend:** Supabase (Postgres + Realtime)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Prerequisites
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Node.js 20+
+- A [Supabase](https://supabase.com) project
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+1. **Clone and install**
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Environment variables**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   Copy keys from `.env.example` into your local env file:
 
-## Deploy on Vercel
+   ```bash
+   cp .env.example .env.local
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   Required variables:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   | Variable | Description |
+   |----------|-------------|
+   | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+
+   Optional:
+
+   | Variable | Description |
+   |----------|-------------|
+   | `NEXT_PUBLIC_SITE_URL` | Canonical site URL for SEO/sitemap (default: `http://localhost:3000`) |
+
+3. **Database**
+
+   Run the SQL in [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor. This creates `rooms`, `participants`, and `votes` tables, RLS policies, and enables Realtime. Rooms track a `facilitator_id` (host) who can reveal votes, start new rounds, and edit the story title.
+
+   **Existing projects:** run the migration comment at the top of `schema.sql` to add `facilitator_id`. Older rooms without a host cannot reveal until recreated.
+
+   If the `alter publication` lines fail, enable Realtime manually: **Database → Publications → supabase_realtime** and add the three tables.
+
+4. **Run dev server**
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000).
+
+## Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Home — create a room or join with a code |
+| `/join/[code]` | Enter display name to join a room |
+| `/room/[code]` | Live voting room (`?p=<participantId>` restores your session on refresh or share) |
+
+## How it works
+
+1. **Create room** — assigns a creative name (e.g. Thunder Avenger) and a short join code (e.g. SPARK), sets you as host.
+2. **Join room** — enter a code and display name; your participant ID is stored in `localStorage`.
+3. **Vote** — pick a Fibonacci card (1, 2, 3, 5, 8, 13, 21, ?, ☕). Votes stay hidden until reveal.
+4. **Reveal** — only the room host can reveal all votes.
+5. **New round** — host clears votes and hides cards for the next story.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
