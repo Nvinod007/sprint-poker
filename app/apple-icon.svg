@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Sprint Poker">
+  <rect width="180" height="180" rx="40" fill="#0b1326"/>
+  <g
+    transform="translate(30 22)"
+    fill="none"
+    stroke="#10b981"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M60 90v20"/>
+    <path d="M10 72.495a27.5 27.5 0 0 0 47.955 18.375 3 3 0 0 1 4.09.005A27.5 27.5 0 0 0 110 72.5c0-11.45-7.5-20-15-27.5l-27.46-26.56a10 10 0 0 0-15-.1L25 44.995c-7.5 7.5-15 16-15 27.5"/>
+  </g>
+</svg>

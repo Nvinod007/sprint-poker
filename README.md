@@ -78,6 +78,18 @@ Real-time planning poker for agile teams. Create a room, share a short code, and
 4. **Reveal** — only the room host can reveal all votes.
 5. **New round** — host clears votes and hides cards for the next story.
 
+Live updates use **Supabase Realtime (WebSocket)**, not polling — see [docs/realtime-sync.md](./docs/realtime-sync.md).
+
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [docs/README.md](./docs/README.md) | Doc index |
+| [docs/architecture.md](./docs/architecture.md) | Routes, session model, module map |
+| [docs/realtime-sync.md](./docs/realtime-sync.md) | Realtime + refetch flow (mermaid diagrams) |
+
+> Local-only notes (`docs/PLAN.md`, `docs/CHANGELOG.md`) are gitignored and not published to the repo.
+
 ## Scripts
 
 | Command | Description |

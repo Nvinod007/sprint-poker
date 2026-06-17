@@ -52,7 +52,7 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
   const [room, setRoom] = useState<Room | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [syncedRoomId, setSyncedRoomId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [override, setOverride] = useState<OptimisticOverride>({});
   const [pending, setPending] = useState({
@@ -65,26 +65,47 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
 
   const activeMutations = useRef(0);
   const votesRef = useRef<Vote[]>([]);
-  votesRef.current = override.votes ?? votes;
+  const refreshRef = useRef<(() => Promise<void>) | null>(null);
+
+  const loading = Boolean(enabled && roomId && syncedRoomId !== roomId);
+  const isSynced = Boolean(roomId && syncedRoomId === roomId);
+
+  useEffect(() => {
+    votesRef.current = override.votes ?? votes;
+  }, [override.votes, votes]);
+
+  const applyFetchedState = useCallback(
+    (state: Awaited<ReturnType<typeof fetchRoomState>>, targetRoomId: string) => {
+      setRoom(state.room);
+      setParticipants(state.participants);
+      setVotes(state.votes);
+      setSyncedRoomId(targetRoomId);
+      setError(null);
+      if (activeMutations.current === 0) {
+        setOverride({});
+      }
+    },
+    [],
+  );
+
+  const applyFetchedStateRef = useRef(applyFetchedState);
 
   const refresh = useCallback(async () => {
     if (!roomId) return;
 
     try {
       const state = await fetchRoomState(roomId);
-      setRoom(state.room);
-      setParticipants(state.participants);
-      setVotes(state.votes);
-      setError(null);
-      if (activeMutations.current === 0) {
-        setOverride({});
-      }
+      applyFetchedStateRef.current(state, roomId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load room");
-    } finally {
-      setLoading(false);
+      setSyncedRoomId(roomId);
     }
   }, [roomId]);
+
+  useEffect(() => {
+    applyFetchedStateRef.current = applyFetchedState;
+    refreshRef.current = refresh;
+  });
 
   const runMutation = useCallback(
     async <T>(
@@ -101,7 +122,7 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
 
       try {
         const result = await action();
-        await refresh();
+        await refreshRef.current?.();
         return result;
       } catch (err) {
         if (activeMutations.current === 1) {
@@ -116,7 +137,7 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
         }
       }
     },
-    [refresh],
+    [],
   );
 
   const castVote = useCallback(
@@ -191,8 +212,27 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
       return;
     }
 
-    setLoading(true);
-    void refresh();
+    let cancelled = false;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void refreshRef.current?.();
+      }, 50);
+    };
+
+    void (async () => {
+      try {
+        const state = await fetchRoomState(roomId);
+        if (cancelled) return;
+        applyFetchedStateRef.current(state, roomId);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load room");
+        setSyncedRoomId(roomId);
+      }
+    })();
 
     const channel = supabase
       .channel(`room:${roomId}`)
@@ -204,7 +244,7 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
           table: "rooms",
           filter: `id=eq.${roomId}`,
         },
-        () => void refresh(),
+        scheduleRefresh,
       )
       .on(
         "postgres_changes",
@@ -214,7 +254,7 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
           table: "participants",
           filter: `room_id=eq.${roomId}`,
         },
-        () => void refresh(),
+        scheduleRefresh,
       )
       .on(
         "postgres_changes",
@@ -224,26 +264,28 @@ export function useRoom({ roomId, enabled = true }: UseRoomOptions) {
           table: "votes",
           filter: `room_id=eq.${roomId}`,
         },
-        () => void refresh(),
+        scheduleRefresh,
       )
       .subscribe();
 
     return () => {
+      cancelled = true;
+      if (refreshTimer) clearTimeout(refreshTimer);
       void supabase.removeChannel(channel);
     };
-  }, [roomId, enabled, refresh]);
+  }, [roomId, enabled]);
 
   const mergedRoom = useMemo(() => {
-    if (!room) return null;
+    if (!room || !isSynced) return null;
     if (!override.room) return room;
     return { ...room, ...override.room };
-  }, [room, override.room]);
+  }, [room, override.room, isSynced]);
 
-  const mergedVotes = override.votes ?? votes;
+  const mergedVotes = isSynced ? (override.votes ?? votes) : [];
 
   return {
     room: mergedRoom,
-    participants,
+    participants: isSynced ? participants : [],
     votes: mergedVotes,
     loading,
     error,
