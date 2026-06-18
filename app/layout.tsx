@@ -3,6 +3,7 @@ import { Hanken_Grotesk, Manrope } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppProviders } from "@/components/app-providers";
+import { getSiteUrl } from "@/lib/site-url";
 
 import "./globals.css";
 
@@ -18,44 +19,57 @@ const hanken = Hanken_Grotesk({
   weight: ["400", "500", "600"],
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = getSiteUrl();
+
+const defaultTitle = "Sprint Poker — Free Online Planning Poker & Story Pointing";
+const defaultDescription =
+  "Free sprint poker and planning poker for agile teams. Estimate user stories with Fibonacci cards in real time — no login, no signup. Create a room and share a code.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Sprint Poker | Efficient Story Pointing",
+    default: defaultTitle,
     template: "%s | Sprint Poker",
   },
-  description:
-    "Estimate user stories together with your team. Real-time planning poker — no login required.",
+  description: defaultDescription,
   keywords: [
+    "free sprint poker",
+    "free planning poker",
+    "online planning poker",
+    "planning poker no login",
+    "story pointing tool",
+    "agile estimation",
+    "scrum poker online",
+    "fibonacci planning poker",
+    "story points estimator",
+    "remote sprint planning",
     "sprint poker",
     "planning poker",
     "story points",
     "agile",
     "scrum",
-    "estimation",
   ],
+  alternates: {
+    canonical: siteUrl,
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteUrl,
     siteName: "Sprint Poker",
-    title: "Sprint Poker | Efficient Story Pointing",
-    description:
-      "Estimate user stories together with your team. Real-time planning poker — no login required.",
+    title: defaultTitle,
+    description: defaultDescription,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sprint Poker | Efficient Story Pointing",
-    description:
-      "Estimate user stories together with your team. Real-time planning poker — no login required.",
+    title: defaultTitle,
+    description: defaultDescription,
   },
   robots: {
     index: true,
     follow: true,
   },
+  category: "technology",
 };
 
 export default function RootLayout({

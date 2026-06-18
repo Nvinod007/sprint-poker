@@ -143,7 +143,7 @@ export function LandingPage() {
               Sprint Poker
             </h1>
             <p className="mt-3 text-lg text-muted-foreground">
-              Estimate stories together.
+              Free online planning poker for agile teams — no login required.
             </p>
           </motion.div>
 

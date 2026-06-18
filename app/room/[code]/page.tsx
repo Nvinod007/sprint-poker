@@ -14,6 +14,7 @@ export async function generateMetadata({
   return {
     title: `Room ${code.toUpperCase()}`,
     description: `Sprint Poker room ${code.toUpperCase()} — vote and reveal story points in real time.`,
+    robots: { index: false, follow: false },
   };
 }
 
